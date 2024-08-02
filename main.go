@@ -1,18 +1,26 @@
 package main
 
 import (
+	"bwastartup-go/auth"
 	"bwastartup-go/handler"
 	"bwastartup-go/user"
 	"fmt"
 	"log"
+	"os"
 
 	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )
 
 func main() {
-	dsn := "root:@tcp(127.0.0.1:3306)/bwastartup-go?charset=utf8mb4&parseTime=True&loc=Local"
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
+
+	dsn := os.Getenv("DSN")
 	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
 
 	if err != nil {
@@ -23,9 +31,10 @@ func main() {
 
 	userRepository := user.NewRepository(db)
 	userService := user.NewService(userRepository)
-	
 	userService.SaveAvatar(9, "images/9.jpg")
-	userHandler := handler.NewUserHandler(userService)
+	authService := auth.NewService()
+
+	userHandler := handler.NewUserHandler(userService, authService)
 
 	router := gin.Default()
 	api := router.Group("/api/v1")
